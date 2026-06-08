@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopLite — Register Account</title>
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS Output -->
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .font-outfit {
+      font-family: 'Outfit', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 flex flex-col min-h-screen text-slate-800 antialiased">
+
+  <!-- Shared Navbar Injected Here -->
+  <div id="navbar-placeholder"></div>
+
+  <!-- Main Content Area -->
+  <main class="flex-grow flex items-center justify-center py-16 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full bg-white border border-slate-100 rounded-3xl p-6 sm:p-10 shadow-xs space-y-8">
+      
+      <!-- Header -->
+      <div class="text-center space-y-2">
+        <h1 class="text-3xl font-extrabold font-outfit text-slate-900 tracking-tight">Create Account</h1>
+        <p class="text-slate-500 text-sm font-light">Join ShopLite to access exclusive deals</p>
+      </div>
+
+      <!-- Registration Form -->
+      <form id="register-form" class="space-y-5" novalidate>
+        
+        <!-- Full Name -->
+        <div class="space-y-1">
+          <label for="fullname" class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Full Name</label>
+          <input 
+            type="text" 
+            id="fullname" 
+            name="fullname" 
+            placeholder="John Doe" 
+            class="w-full bg-white border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 rounded-xl px-4 py-3 text-sm transition-all outline-hidden"
+          />
+          <p id="error-fullname" class="text-xs text-rose-500 mt-1 hidden"></p>
+        </div>
+
+        <!-- Email Address -->
+        <div class="space-y-1">
+          <label for="email" class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Email Address</label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            placeholder="john@example.com" 
+            class="w-full bg-white border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 rounded-xl px-4 py-3 text-sm transition-all outline-hidden"
+          />
+          <p id="error-email" class="text-xs text-rose-500 mt-1 hidden"></p>
+        </div>
+
+        <!-- Password -->
+        <div class="space-y-1">
+          <label for="password" class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Password</label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            placeholder="••••••••" 
+            class="w-full bg-white border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 rounded-xl px-4 py-3 text-sm transition-all outline-hidden"
+          />
+          <p id="error-password" class="text-xs text-rose-500 mt-1 hidden"></p>
+        </div>
+
+        <!-- Phone Number -->
+        <div class="space-y-1">
+          <label for="phone" class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Phone Number</label>
+          <input 
+            type="tel" 
+            id="phone" 
+            name="phone" 
+            placeholder="0123456789" 
+            class="w-full bg-white border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 rounded-xl px-4 py-3 text-sm transition-all outline-hidden"
+          />
+          <p id="error-phone" class="text-xs text-rose-500 mt-1 hidden"></p>
+        </div>
+
+        <!-- Role Select -->
+        <div class="space-y-1">
+          <label for="role" class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Account Role</label>
+          <div class="relative">
+            <select 
+              id="role" 
+              name="role" 
+              class="w-full bg-white border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 rounded-xl px-4 py-3 text-sm transition-all outline-hidden appearance-none cursor-pointer"
+            >
+              <option value="" disabled selected>Select your account type</option>
+              <option value="customer">Customer</option>
+              <option value="vendor">Vendor / Seller</option>
+              <option value="partner">Business Partner</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+          <p id="error-role" class="text-xs text-rose-500 mt-1 hidden"></p>
+        </div>
+
+        <!-- Agree to Terms -->
+        <div class="space-y-1 pt-2">
+          <div class="flex items-start gap-3">
+            <div class="flex items-center h-5">
+              <input 
+                type="checkbox" 
+                id="terms" 
+                name="terms" 
+                class="h-4.5 w-4.5 text-indigo-600 focus:ring-indigo-500 border-slate-300 rounded-md cursor-pointer"
+              />
+            </div>
+            <label for="terms" class="text-xs text-slate-500 cursor-pointer select-none leading-normal">
+              I agree to the <a href="#" class="text-indigo-600 font-semibold hover:underline">Terms of Service</a> and <a href="#" class="text-indigo-600 font-semibold hover:underline">Privacy Policy</a>.
+            </label>
+          </div>
+          <p id="error-terms" class="text-xs text-rose-500 mt-1 hidden"></p>
+        </div>
+
+        <!-- Submit Button -->
+        <button 
+          type="submit" 
+          class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-indigo-500/20 transition-all cursor-pointer text-center text-sm"
+        >
+          Create Account
+        </button>
+      </form>
+
+      <!-- Success Alert -->
+      <div id="register-success" class="hidden flex flex-col items-center text-center p-6 bg-emerald-50 text-emerald-800 border border-emerald-100 rounded-2xl space-y-3">
+        <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="space-y-1">
+          <h2 class="font-bold text-base">Registration Complete!</h2>
+          <p class="text-xs text-emerald-600 font-light">Your account was successfully registered. Thank you for joining ShopLite.</p>
+        </div>
+        <a href="index.html" class="mt-4 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-colors">
+          Go Shopping
+        </a>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Shared Footer Injected Here -->
+  <div id="footer-placeholder"></div>
+
+  <!-- Scripts -->
+  <script type="module" src="js/components.js"></script>
+  <script type="module" src="js/register.js"></script>
+</body>
+</html>

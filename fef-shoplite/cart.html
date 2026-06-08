@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopLite — Shopping Cart</title>
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS Output -->
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .font-outfit {
+      font-family: 'Outfit', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 flex flex-col min-h-screen text-slate-800 antialiased">
+
+  <!-- Shared Navbar Injected Here -->
+  <div id="navbar-placeholder"></div>
+
+  <!-- Main Content Area -->
+  <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
+    <div class="mb-8 border-b border-slate-100 pb-6">
+      <h1 class="text-3xl font-extrabold font-outfit text-slate-800 tracking-tight">Shopping Cart</h1>
+      <p class="text-slate-500 mt-1 text-sm sm:text-base">Review the products you have selected</p>
+    </div>
+
+    <!-- Main Cart Area -->
+    <div id="cart-container" class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+      
+      <!-- Left: Cart Items List (Col-span 2) -->
+      <div id="cart-items-section" class="lg:col-span-2 space-y-4">
+        <!-- Loading state -->
+        <div id="cart-loading" class="bg-white border border-slate-100 rounded-2xl p-6 animate-pulse space-y-4">
+          <div class="h-10 bg-slate-200 rounded-md w-full"></div>
+          <div class="h-10 bg-slate-200 rounded-md w-full"></div>
+        </div>
+
+        <!-- Rendered items container -->
+        <div id="cart-items-list" class="space-y-4 hidden">
+          <!-- Dynamically populated via js/cart.js -->
+        </div>
+      </div>
+
+      <!-- Right: Summary Panel -->
+      <div id="cart-summary-section" class="bg-white border border-slate-100 rounded-2xl p-6 shadow-xs hidden">
+        <h2 class="text-lg font-bold font-outfit text-slate-800 mb-6 border-b border-slate-100 pb-4">Order Summary</h2>
+        
+        <div class="space-y-4 text-sm text-slate-600 mb-6">
+          <div class="flex justify-between">
+            <span>Subtotal</span>
+            <span id="summary-subtotal" class="font-semibold text-slate-800">$0.00</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Shipping</span>
+            <span id="summary-shipping" class="text-emerald-600 font-semibold">FREE</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Tax (Estimated)</span>
+            <span id="summary-tax" class="font-semibold text-slate-800">$0.00</span>
+          </div>
+          <div class="border-t border-slate-100 pt-4 flex justify-between text-base text-slate-800 font-bold">
+            <span>Total</span>
+            <span id="summary-total" class="text-indigo-600 font-outfit text-lg">$0.00</span>
+          </div>
+        </div>
+
+        <button id="checkout-btn" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-indigo-500/20 transition-all cursor-pointer text-center">
+          Proceed to Checkout
+        </button>
+      </div>
+
+      <!-- Empty Cart State -->
+      <div id="cart-empty" class="hidden lg:col-span-3 text-center py-20 bg-white border border-slate-100 rounded-3xl p-12 shadow-xs">
+        <div class="w-16 h-16 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-6 text-slate-400">
+          <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+          </svg>
+        </div>
+        <h2 class="text-xl font-bold font-outfit text-slate-800">Your cart is empty</h2>
+        <p class="text-slate-400 mt-2 text-sm font-light max-w-sm mx-auto">Looks like you haven't added any products to your cart yet. Let's find something special.</p>
+        <a href="index.html" class="mt-6 inline-block px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-md hover:shadow-indigo-500/20 transition-all">
+          Continue Shopping
+        </a>
+      </div>
+      
+    </div>
+  </main>
+
+  <!-- Shared Footer Injected Here -->
+  <div id="footer-placeholder"></div>
+
+  <!-- Scripts -->
+  <script type="module" src="js/components.js"></script>
+  <script type="module" src="js/cart.js"></script>
+</body>
+</html>
