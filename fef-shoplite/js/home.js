@@ -1,6 +1,7 @@
 // js/home.js
 // Home Page catalog and filtering controller.
 import { fetchProducts, fetchCategories } from './api.js';
+import { updateCartBadges } from './components.js';
 
 // Elements
 const productsGrid = document.getElementById('products-grid');
@@ -14,6 +15,7 @@ const emptyState = document.getElementById('empty-state');
 // State
 let allProducts = [];
 let selectedCategory = 'all';
+let searchQuery = '';
 
 /**
  * Initializes the page.
@@ -28,6 +30,13 @@ async function init() {
     ]);
 
     allProducts = products;
+
+    // Read search query from URL params if present
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchParam = urlParams.get('search');
+    if (searchParam) {
+      searchQuery = searchParam;
+    }
     
     renderCategories(categories);
     renderProducts();
@@ -113,10 +122,19 @@ function getStarsHtml(rating) {
 function renderProducts() {
   if (!productsGrid) return;
 
-  // Filter products
-  const filtered = selectedCategory === 'all' 
+  // Filter products by category
+  let filtered = selectedCategory === 'all' 
     ? allProducts 
     : allProducts.filter(p => p.category === selectedCategory);
+
+  // Filter products by search query
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase().trim();
+    filtered = filtered.filter(p => 
+      p.title.toLowerCase().includes(q) || 
+      p.description.toLowerCase().includes(q)
+    );
+  }
 
   hideLoading();
 
@@ -139,22 +157,39 @@ function renderProducts() {
 
     return `
       <div class="bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full group">
-        <!-- Card Image Link -->
-        <a href="product.html?id=${id}" class="relative block aspect-video w-full bg-slate-50 overflow-hidden border-b border-slate-100/60">
+        <!-- Card Image & Add to Cart Container -->
+        <div class="relative aspect-video w-full bg-slate-50 overflow-hidden border-b border-slate-100/60 group">
+          <!-- Image Link -->
+          <a href="product.html?id=${id}" class="block w-full h-full">
+            <img 
+              src="${thumbnail || 'assets/placeholder.webp'}"
+              alt="${title}"
+              loading="lazy"
+              onerror="this.onerror=null; this.src='assets/placeholder.webp';"
+              class="object-cover h-full w-full group-hover:scale-105 transition-transform duration-500"
+            />
+          </a>
+
           <!-- Discount badge -->
           ${hasDiscount ? `
             <span class="absolute top-3 left-3 z-10 inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-500 text-white shadow-xs">
               -${discountPercentage.toFixed(0)}% OFF
             </span>
           ` : ''}
-          <img 
-            src="${thumbnail || 'assets/placeholder.webp'}"
-            alt="${title}"
-            loading="lazy"
-            onerror="this.onerror=null; this.src='assets/placeholder.webp';"
-            class="object-cover h-full w-full group-hover:scale-105 transition-transform duration-500"
-          />
-        </a>
+
+          <!-- Hover Add to Cart Button Overlay -->
+          <div class="absolute inset-0 bg-slate-950/45 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px] pointer-events-none">
+            <button 
+              data-id="${id}"
+              class="add-to-cart-btn-home pointer-events-auto px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 rounded-xl transition-all cursor-pointer shadow-lg flex items-center gap-1.5 transform translate-y-2 group-hover:translate-y-0 duration-300"
+            >
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+              Add to Cart
+            </button>
+          </div>
+        </div>
 
         <!-- Content -->
         <div class="p-5 flex-grow flex flex-col justify-between">
@@ -221,6 +256,87 @@ function showError(msg) {
 // Retry Button handler
 if (retryBtn) {
   retryBtn.addEventListener('click', init);
+}
+
+// Listen to custom search event from header search bar
+window.addEventListener('product-search', (e) => {
+  searchQuery = e.detail.query;
+  renderProducts();
+});
+
+// Event delegation for the product grid (Add to Cart clicks)
+if (productsGrid) {
+  productsGrid.addEventListener('click', (e) => {
+    const btn = e.target.closest('.add-to-cart-btn-home');
+    if (!btn) return;
+
+    e.preventDefault();
+    const productId = parseInt(btn.getAttribute('data-id'), 10);
+    const product = allProducts.find(p => p.id === productId);
+    if (!product) return;
+
+    // Retrieve and update cart
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const existingItem = cart.find(item => item.id === productId);
+
+    if (existingItem) {
+      existingItem.quantity = Math.min(existingItem.quantity + 1, product.stock || 99);
+    } else {
+      cart.push({
+        id: product.id,
+        title: product.title,
+        price: product.price,
+        discountPercentage: product.discountPercentage || 0,
+        thumbnail: product.thumbnail || (product.images && product.images[0]) || 'assets/placeholder.webp',
+        quantity: 1,
+        stock: product.stock
+      });
+    }
+
+    localStorage.setItem('cart', JSON.stringify(cart));
+    updateCartBadges();
+    showToast(product.title);
+  });
+}
+
+/**
+ * Renders a premium dynamic toast notification on the screen.
+ */
+function showToast(title) {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none';
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = 'flex items-center gap-3 p-4 bg-emerald-50 text-emerald-800 border border-emerald-100 rounded-xl shadow-lg transition-all duration-300 transform translate-y-10 opacity-0 max-w-sm pointer-events-auto';
+  toast.innerHTML = `
+    <svg class="h-5 w-5 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    <div class="text-xs">
+      <p class="font-bold">Item Added!</p>
+      <p class="text-emerald-600 mt-0.5">"${title}" added to cart.</p>
+    </div>
+  `;
+
+  container.appendChild(toast);
+
+  // Trigger animation next tick
+  setTimeout(() => {
+    toast.classList.remove('translate-y-10', 'opacity-0');
+  }, 10);
+
+  // Auto remove
+  setTimeout(() => {
+    toast.classList.add('translate-y-10', 'opacity-0');
+    setTimeout(() => {
+      toast.remove();
+    }, 300);
+  }, 3000);
 }
 
 // Run on page load

@@ -1,16 +1,16 @@
 // js/api.js
-// Mock API fetch layer for ShopLite.
-// To switch to a real API in the future, simply update the URLs and parse the data accordingly.
+// Real API fetch layer for ShopLite.
 
-const MOCK_URL = './mock/dummy.json';
+const BASE_URL = 'https://dummyjson.com';
 
 /**
- * Fetch all products from the mock source.
+ * Fetch all products from the DummyJSON API.
+ * Uses limit=0 to retrieve all products for client-side filtering.
  * @returns {Promise<Array>} List of products.
  */
 export async function fetchProducts() {
   try {
-    const res = await fetch(MOCK_URL);
+    const res = await fetch(`${BASE_URL}/products?limit=0`);
     if (!res.ok) {
       throw new Error(`HTTP error! Status: ${res.status}`);
     }
@@ -29,11 +29,11 @@ export async function fetchProducts() {
  */
 export async function fetchProductById(id) {
   try {
-    const products = await fetchProducts();
-    const product = products.find(p => p.id === parseInt(id));
-    if (!product) {
-      throw new Error(`Product with ID ${id} not found`);
+    const res = await fetch(`${BASE_URL}/products/${id}`);
+    if (!res.ok) {
+      throw new Error(`HTTP error! Status: ${res.status}`);
     }
+    const product = await res.json();
     return product;
   } catch (error) {
     console.error(`Error fetching product ID ${id}:`, error);
@@ -42,16 +42,39 @@ export async function fetchProductById(id) {
 }
 
 /**
- * Extract unique categories from the product list.
- * @returns {Promise<Array>} List of unique category strings.
+ * Fetch the list of categories.
+ * @returns {Promise<Array>} List of category strings.
  */
 export async function fetchCategories() {
   try {
-    const products = await fetchProducts();
-    const categories = [...new Set(products.map(p => p.category))];
+    const res = await fetch(`${BASE_URL}/products/category-list`);
+    if (!res.ok) {
+      throw new Error(`HTTP error! Status: ${res.status}`);
+    }
+    const categories = await res.json();
     return categories;
   } catch (error) {
     console.error("Error fetching categories:", error);
     throw error;
   }
 }
+
+/**
+ * Fetch products belonging to a specific category.
+ * @param {string} categoryName The category identifier.
+ * @returns {Promise<Array>} List of products in that category.
+ */
+export async function fetchProductsByCategory(categoryName) {
+  try {
+    const res = await fetch(`${BASE_URL}/products/category/${categoryName}`);
+    if (!res.ok) {
+      throw new Error(`HTTP error! Status: ${res.status}`);
+    }
+    const data = await res.json();
+    return data.products || [];
+  } catch (error) {
+    console.error(`Error fetching products for category ${categoryName}:`, error);
+    throw error;
+  }
+}
+

@@ -67,6 +67,7 @@ function renderProductDetails() {
   hideLoading();
 
   const {
+    id,
     title,
     description,
     category,
@@ -81,7 +82,8 @@ function renderProductDetails() {
     warrantyInformation,
     shippingInformation,
     returnPolicy,
-    images
+    images,
+    thumbnail
   } = currentProduct;
 
   const hasDiscount = discountPercentage && discountPercentage > 0;
