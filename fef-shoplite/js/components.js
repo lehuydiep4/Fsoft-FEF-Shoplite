@@ -3,18 +3,8 @@
 // Automatically executed on DOMContentLoaded.
 
 import { initSearchFeature } from './search.js';
+import { getCartCount } from './services/cartService.js';
 
-/**
- * Gets the current cart item count from localStorage.
- */
-function getCartItemCount() {
-  try {
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-    return cart.reduce((total, item) => total + (item.quantity || 1), 0);
-  } catch (e) {
-    return 0;
-  }
-}
 
 /**
  * Asynchronously fetches an HTML component file and injects it into a placeholder DOM element.
@@ -125,7 +115,7 @@ function initNavbarLogic() {
  * Safely calculates totals and toggles badge visibility.
  */
 export function updateCartBadges() {
-  const cartCount = getCartItemCount();
+  const cartCount = getCartCount();
   const badge = document.getElementById('cart-badge');
   const mobileBadge = document.getElementById('mobile-cart-badge');
 

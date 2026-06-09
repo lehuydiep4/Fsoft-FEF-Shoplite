@@ -4,6 +4,7 @@ import { fetchProducts, fetchCategories } from './api.js';
 import { updateCartBadges } from './components.js';
 import { showToast } from './toast.js';
 import { bindTemplateData } from '../utils/dom.js';
+import { addToCart, getProductPriceInfo } from './services/cartService.js';
 
 // Elements
 const productsGrid = document.getElementById('products-grid');
@@ -162,8 +163,7 @@ function renderProducts() {
     const { id, title, price, discountPercentage, rating, thumbnail, category } = product;
 
     // Calc discounted price
-    const hasDiscount = discountPercentage && discountPercentage > 0;
-    const finalPrice = hasDiscount ? price * (1 - discountPercentage / 100) : price;
+    const { hasDiscount, finalPrice } = getProductPriceInfo(product);
 
     // Format category label
     const categoryLabel = category.charAt(0).toUpperCase() + category.slice(1);
@@ -243,25 +243,7 @@ if (productsGrid) {
     const product = allProducts.find(p => p.id === productId);
     if (!product) return;
 
-    // Retrieve and update cart
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-    const existingItem = cart.find(item => item.id === productId);
-
-    if (existingItem) {
-      existingItem.quantity = Math.min(existingItem.quantity + 1, product.stock || 99);
-    } else {
-      cart.push({
-        id: product.id,
-        title: product.title,
-        price: product.price,
-        discountPercentage: product.discountPercentage || 0,
-        thumbnail: product.thumbnail || (product.images && product.images[0]) || 'assets/placeholder.webp',
-        quantity: 1,
-        stock: product.stock
-      });
-    }
-
-    localStorage.setItem('cart', JSON.stringify(cart));
+    addToCart(product, 1);
     updateCartBadges();
     showToast("Item Added!", `"${product.title}" added to cart.`);
   });

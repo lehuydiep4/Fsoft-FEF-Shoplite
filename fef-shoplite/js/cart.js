@@ -2,6 +2,7 @@
 // Shopping Cart page controller. Handles dynamic rendering and state modifications of the cart.
 import { updateCartBadges } from './components.js';
 import { bindTemplateData } from '../utils/dom.js';
+import { calculateTotals, updateItemQuantity, removeItem } from './services/cartService.js';
 
 // Elements
 const cartItemsList = document.getElementById('cart-items-list');
@@ -16,7 +17,6 @@ const summaryTax = document.getElementById('summary-tax');
 const summaryTotal = document.getElementById('summary-total');
 
 // State
-let cart = [];
 let cartItemTemplate = null;
 
 /**
@@ -32,7 +32,6 @@ async function init() {
     const doc = parser.parseFromString(html, 'text/html');
     cartItemTemplate = doc.getElementById('cart-item-template');
     
-    loadCart();
     renderCart();
   } catch (error) {
     console.error("Error loading cart page templates:", error);
@@ -42,29 +41,12 @@ async function init() {
 }
 
 /**
- * Loads the cart array from localStorage.
- */
-function loadCart() {
-  try {
-    cart = JSON.parse(localStorage.getItem('cart') || '[]');
-  } catch (e) {
-    cart = [];
-  }
-}
-
-/**
- * Saves the cart state back to localStorage.
- */
-function saveCart() {
-  localStorage.setItem('cart', JSON.stringify(cart));
-  updateCartBadges();
-}
-
-/**
  * Renders the cart items and summary details.
  */
 function renderCart() {
-  if (cart.length === 0) {
+  const { items, subtotal, tax, total } = calculateTotals();
+
+  if (items.length === 0) {
     cartEmpty.classList.remove('hidden');
     cartItemsList.classList.add('hidden');
     cartSummarySection.classList.add('hidden');
@@ -75,18 +57,12 @@ function renderCart() {
   cartItemsList.classList.remove('hidden');
   cartSummarySection.classList.remove('hidden');
 
-  let subtotal = 0;
   cartItemsList.innerHTML = '';
 
   // Iterate and clone dynamic row templates
-  cart.forEach((item, index) => {
-    const { id, title, price, discountPercentage, thumbnail, quantity, stock } = item;
+  items.forEach((item, index) => {
+    const { id, title, price, thumbnail, quantity, stock, hasDiscount, finalPrice, itemSubtotal } = item;
     
-    const hasDiscount = discountPercentage && discountPercentage > 0;
-    const finalPrice = hasDiscount ? price * (1 - discountPercentage / 100) : price;
-    const itemSubtotal = finalPrice * quantity;
-    subtotal += itemSubtotal;
-
     if (!cartItemTemplate) return;
     const clone = cartItemTemplate.content.cloneNode(true);
 
@@ -111,11 +87,6 @@ function renderCart() {
     cartItemsList.appendChild(clone);
   });
 
-  // Calculate taxes and totals
-  const taxRate = 0.08; // 8% Tax
-  const tax = subtotal * taxRate;
-  const total = subtotal + tax;
-
   // Update Summary DOM
   summarySubtotal.textContent = `$${subtotal.toFixed(2)}`;
   summaryTax.textContent = `$${tax.toFixed(2)}`;
@@ -129,11 +100,9 @@ if (cartItemsList) {
     const minusBtn = e.target.closest('.js-cart-item-qty-minus');
     if (minusBtn) {
       const idx = parseInt(minusBtn.getAttribute('data-index'), 10);
-      if (cart[idx] && cart[idx].quantity > 1) {
-        cart[idx].quantity--;
-        saveCart();
-        renderCart();
-      }
+      updateItemQuantity(idx, -1);
+      updateCartBadges();
+      renderCart();
       return;
     }
 
@@ -141,14 +110,9 @@ if (cartItemsList) {
     const plusBtn = e.target.closest('.js-cart-item-qty-plus');
     if (plusBtn) {
       const idx = parseInt(plusBtn.getAttribute('data-index'), 10);
-      if (cart[idx]) {
-        const maxStock = cart[idx].stock || 99;
-        if (cart[idx].quantity < maxStock) {
-          cart[idx].quantity++;
-          saveCart();
-          renderCart();
-        }
-      }
+      updateItemQuantity(idx, 1);
+      updateCartBadges();
+      renderCart();
       return;
     }
 
@@ -156,11 +120,9 @@ if (cartItemsList) {
     const deleteBtn = e.target.closest('.js-cart-item-delete-btn');
     if (deleteBtn) {
       const idx = parseInt(deleteBtn.getAttribute('data-index'), 10);
-      if (cart[idx]) {
-        cart.splice(idx, 1);
-        saveCart();
-        renderCart();
-      }
+      removeItem(idx);
+      updateCartBadges();
+      renderCart();
       return;
     }
   });

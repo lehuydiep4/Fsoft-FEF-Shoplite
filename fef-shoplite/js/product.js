@@ -4,6 +4,7 @@ import { fetchProductById } from './api.js';
 import { updateCartBadges } from './components.js';
 import { showToast } from './toast.js';
 import { bindTemplateData } from '../utils/dom.js';
+import { addToCart, getProductPriceInfo } from './services/cartService.js';
 
 // Elements
 const detailPageContainer = document.getElementById('detail-page-container');
@@ -101,9 +102,7 @@ function renderProductDetails() {
     thumbnail
   } = currentProduct;
 
-  const hasDiscount = discountPercentage && discountPercentage > 0;
-  const finalPrice = hasDiscount ? price * (1 - discountPercentage / 100) : price;
-  const savings = hasDiscount ? price - finalPrice : 0;
+  const { hasDiscount, finalPrice, savings } = getProductPriceInfo(currentProduct);
   const categoryLabel = category.charAt(0).toUpperCase() + category.slice(1);
 
   // Set page document title dynamically
@@ -209,25 +208,7 @@ function renderProductDetails() {
       addToCartBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700', 'cursor-pointer');
     } else {
       addToCartBtn.addEventListener('click', () => {
-        // Add to localStorage cart
-        const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-        const existingItem = cart.find(item => item.id === id);
-
-        if (existingItem) {
-          existingItem.quantity = Math.min(existingItem.quantity + currentQuantity, stock);
-        } else {
-          cart.push({
-            id: id,
-            title: title,
-            price: price,
-            discountPercentage: discountPercentage || 0,
-            thumbnail: thumbnail || images[0] || 'assets/placeholder.webp',
-            quantity: currentQuantity,
-            stock: stock
-          });
-        }
-
-        localStorage.setItem('cart', JSON.stringify(cart));
+        addToCart(currentProduct, currentQuantity);
         updateCartBadges();
 
         // Show global toast
