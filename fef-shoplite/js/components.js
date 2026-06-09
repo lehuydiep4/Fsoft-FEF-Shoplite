@@ -169,3 +169,51 @@ document.addEventListener('DOMContentLoaded', async () => {
     initSearchFeature();
   }
 });
+
+// Custom Web Component to dynamically load and inline SVG files
+const svgCache = new Map();
+
+class SvgIcon extends HTMLElement {
+  async connectedCallback() {
+    const src = this.getAttribute('src');
+    if (!src) return;
+    try {
+      let svgText = svgCache.get(src);
+      if (!svgText) {
+        const response = await fetch(src);
+        if (response.ok) {
+          svgText = await response.text();
+          svgCache.set(src, svgText);
+        } else {
+          console.error(`Failed to load SVG icon: ${src} (Status: ${response.status})`);
+          return;
+        }
+      }
+      
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(svgText, 'image/svg+xml');
+      const svgElement = doc.querySelector('svg');
+      if (svgElement) {
+        // Copy all attributes from <svg-icon> to the new <svg>
+        for (const attr of this.attributes) {
+          if (attr.name !== 'src') {
+            if (attr.name === 'class') {
+              const existingClass = svgElement.getAttribute('class') || '';
+              svgElement.setAttribute('class', (existingClass + ' ' + attr.value).trim());
+            } else {
+              svgElement.setAttribute(attr.name, attr.value);
+            }
+          }
+        }
+        this.replaceWith(svgElement);
+      }
+    } catch (e) {
+      console.error('Error parsing/replacing SVG:', src, e);
+    }
+  }
+}
+
+if (!customElements.get('svg-icon')) {
+  customElements.define('svg-icon', SvgIcon);
+}
+

@@ -1,6 +1,7 @@
 // js/cart.js
 // Shopping Cart page controller. Handles dynamic rendering and state modifications of the cart.
 import { updateCartBadges } from './components.js';
+import { bindTemplateData } from '../utils/dom.js';
 
 // Elements
 const cartItemsList = document.getElementById('cart-items-list');
@@ -16,15 +17,28 @@ const summaryTotal = document.getElementById('summary-total');
 
 // State
 let cart = [];
+let cartItemTemplate = null;
 
 /**
  * Initializes the cart page.
  */
-function init() {
+async function init() {
   showLoading();
-  loadCart();
-  renderCart();
-  hideLoading();
+  try {
+    const res = await fetch('components/cart-item.html');
+    if (!res.ok) throw new Error("Failed to load cart item component");
+    const html = await res.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    cartItemTemplate = doc.getElementById('cart-item-template');
+    
+    loadCart();
+    renderCart();
+  } catch (error) {
+    console.error("Error loading cart page templates:", error);
+  } finally {
+    hideLoading();
+  }
 }
 
 /**
@@ -62,9 +76,10 @@ function renderCart() {
   cartSummarySection.classList.remove('hidden');
 
   let subtotal = 0;
+  cartItemsList.innerHTML = '';
 
-  // Build items list
-  cartItemsList.innerHTML = cart.map((item, index) => {
+  // Iterate and clone dynamic row templates
+  cart.forEach((item, index) => {
     const { id, title, price, discountPercentage, thumbnail, quantity, stock } = item;
     
     const hasDiscount = discountPercentage && discountPercentage > 0;
@@ -72,105 +87,28 @@ function renderCart() {
     const itemSubtotal = finalPrice * quantity;
     subtotal += itemSubtotal;
 
-    return `
-      <div class="bg-white border border-slate-100 rounded-2xl p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6 shadow-xs hover:shadow-md transition-shadow">
-        <!-- Image -->
-        <a href="product.html?id=${id}" class="w-24 h-24 bg-slate-50 border border-slate-100 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center">
-          <img 
-            src="${thumbnail || 'assets/placeholder.webp'}" 
-            alt="${title}"
-            onerror="this.onerror=null; this.src='assets/placeholder.webp';"
-            class="w-full h-full object-cover"
-          />
-        </a>
+    if (!cartItemTemplate) return;
+    const clone = cartItemTemplate.content.cloneNode(true);
 
-        <!-- Details -->
-        <div class="flex-grow text-center sm:text-left space-y-1 w-full min-w-0">
-          <h3 class="font-bold text-slate-800 hover:text-indigo-600 transition-colors text-base truncate">
-            <a href="product.html?id=${id}">${title}</a>
-          </h3>
-          <div class="flex items-center justify-center sm:justify-start gap-2">
-            ${hasDiscount ? `
-              <span class="text-sm font-black text-slate-800">$${finalPrice.toFixed(2)}</span>
-              <span class="text-xs text-slate-400 line-through">$${price.toFixed(2)}</span>
-            ` : `
-              <span class="text-sm font-semibold text-slate-800">$${price.toFixed(2)}</span>
-            `}
-          </div>
-        </div>
-
-        <!-- Controls (Quantity + Delete) -->
-        <div class="flex flex-row items-center justify-between sm:justify-end gap-6 w-full sm:w-auto flex-shrink-0 pt-4 sm:pt-0 border-t sm:border-0 border-slate-50">
-          <!-- Quantity adjuster -->
-          <div class="flex items-center border border-slate-200 rounded-xl px-1 py-1 bg-slate-50/50">
-            <button 
-              data-index="${index}"
-              class="qty-minus w-7 h-7 rounded-lg flex items-center justify-center hover:bg-slate-200 cursor-pointer text-slate-500 transition-colors"
-              ${quantity <= 1 ? 'disabled' : ''}
-            >
-              <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
-            </button>
-            <span class="w-9 text-center text-xs font-bold text-slate-800 select-none">${quantity}</span>
-            <button 
-              data-index="${index}"
-              class="qty-plus w-7 h-7 rounded-lg flex items-center justify-center hover:bg-slate-200 cursor-pointer text-slate-500 transition-colors"
-              ${quantity >= (stock || 99) ? 'disabled' : ''}
-            >
-              <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            </button>
-          </div>
-
-          <!-- Total price & Delete -->
-          <div class="flex items-center gap-4">
-            <span class="text-base font-extrabold text-slate-800 font-outfit min-w-[70px] text-right">
-              $${itemSubtotal.toFixed(2)}
-            </span>
-            <button 
-              data-index="${index}"
-              class="delete-item-btn p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer transition-all"
-              aria-label="Remove item"
-            >
-              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  // Bind adjuster event listeners
-  cartItemsList.querySelectorAll('.qty-minus').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const idx = parseInt(e.currentTarget.getAttribute('data-index'));
-      if (cart[idx].quantity > 1) {
-        cart[idx].quantity--;
-        saveCart();
-        renderCart();
-      }
+    bindTemplateData(clone, {
+      '.js-cart-item-link': { href: `product.html?id=${id}` },
+      '.js-cart-item-title-link': { href: `product.html?id=${id}`, textContent: title },
+      '.js-cart-item-img': { src: thumbnail || 'assets/placeholder.webp', alt: title },
+      '.js-cart-item-price': `$${finalPrice.toFixed(2)}`,
+      '.js-cart-item-original-price': hasDiscount
+        ? { className: 'js-cart-item-original-price text-xs text-slate-400 line-through', textContent: `$${price.toFixed(2)}` }
+        : { className: 'js-cart-item-original-price hidden' },
+      '.js-cart-item-qty-minus': { 'data-index': index, disabled: quantity <= 1 },
+      '.js-cart-item-qty-display': quantity,
+      '.js-cart-item-qty-plus': { 'data-index': index, disabled: quantity >= (stock || 99) },
+      '.js-cart-item-subtotal': `$${itemSubtotal.toFixed(2)}`,
+      '.js-cart-item-delete-btn': { 'data-index': index }
     });
-  });
 
-  cartItemsList.querySelectorAll('.qty-plus').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const idx = parseInt(e.currentTarget.getAttribute('data-index'));
-      const maxStock = cart[idx].stock || 99;
-      if (cart[idx].quantity < maxStock) {
-        cart[idx].quantity++;
-        saveCart();
-        renderCart();
-      }
-    });
-  });
+    const img = clone.querySelector('.js-cart-item-img');
+    if (img) img.onerror = () => { img.src = 'assets/placeholder.webp'; };
 
-  cartItemsList.querySelectorAll('.delete-item-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const idx = parseInt(e.currentTarget.getAttribute('data-index'));
-      cart.splice(idx, 1);
-      saveCart();
-      renderCart();
-    });
+    cartItemsList.appendChild(clone);
   });
 
   // Calculate taxes and totals
@@ -182,6 +120,50 @@ function renderCart() {
   summarySubtotal.textContent = `$${subtotal.toFixed(2)}`;
   summaryTax.textContent = `$${tax.toFixed(2)}`;
   summaryTotal.textContent = `$${total.toFixed(2)}`;
+}
+
+// Bind dynamic event listeners using Event Delegation on cartItemsList
+if (cartItemsList) {
+  cartItemsList.addEventListener('click', (e) => {
+    // Minus Adjustment
+    const minusBtn = e.target.closest('.js-cart-item-qty-minus');
+    if (minusBtn) {
+      const idx = parseInt(minusBtn.getAttribute('data-index'), 10);
+      if (cart[idx] && cart[idx].quantity > 1) {
+        cart[idx].quantity--;
+        saveCart();
+        renderCart();
+      }
+      return;
+    }
+
+    // Plus Adjustment
+    const plusBtn = e.target.closest('.js-cart-item-qty-plus');
+    if (plusBtn) {
+      const idx = parseInt(plusBtn.getAttribute('data-index'), 10);
+      if (cart[idx]) {
+        const maxStock = cart[idx].stock || 99;
+        if (cart[idx].quantity < maxStock) {
+          cart[idx].quantity++;
+          saveCart();
+          renderCart();
+        }
+      }
+      return;
+    }
+
+    // Remove Item
+    const deleteBtn = e.target.closest('.js-cart-item-delete-btn');
+    if (deleteBtn) {
+      const idx = parseInt(deleteBtn.getAttribute('data-index'), 10);
+      if (cart[idx]) {
+        cart.splice(idx, 1);
+        saveCart();
+        renderCart();
+      }
+      return;
+    }
+  });
 }
 
 // State display management

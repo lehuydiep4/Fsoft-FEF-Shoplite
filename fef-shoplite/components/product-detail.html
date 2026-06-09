@@ -1,0 +1,128 @@
+<template id="product-detail-template">
+  <!-- Left Column: Gallery -->
+  <div class="space-y-4">
+    <div class="relative bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden aspect-square flex items-center justify-center">
+      <!-- Discount banner badge -->
+      <span class="js-detail-discount-badge hidden absolute top-4 left-4 z-10 inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-rose-500 text-white shadow-xs">
+        -0% OFF
+      </span>
+      <img 
+        id="main-product-image" 
+        src="assets/placeholder.webp" 
+        alt="Product Image"
+        class="js-detail-main-img object-cover w-full h-full max-h-[500px]"
+      />
+    </div>
+    <!-- Thumbnails Container -->
+    <div class="js-detail-thumbnails-container flex gap-3 mt-4 overflow-x-auto pb-1 max-w-full scrollbar-none"></div>
+  </div>
+
+  <!-- Right Column: Details Info -->
+  <div class="flex flex-col justify-between space-y-6">
+    <div class="space-y-4">
+      <!-- Brand & Category -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="js-detail-category text-xs font-bold text-indigo-600 uppercase tracking-widest">Category</span>
+          <span class="text-slate-300 text-sm">•</span>
+          <span class="js-detail-brand text-sm font-semibold text-slate-500">Brand</span>
+        </div>
+        <!-- Stock status -->
+        <span class="js-detail-stock-badge px-3 py-1 rounded-full text-xs font-semibold border bg-emerald-50 text-emerald-700 border-emerald-100">
+          In Stock
+        </span>
+      </div>
+
+      <!-- Title -->
+      <h1 class="js-detail-title text-2xl sm:text-3xl font-extrabold font-outfit text-slate-900 leading-tight">
+        Product Title
+      </h1>
+
+      <!-- Rating & Reviews count -->
+      <div class="flex items-center gap-2.5">
+        <div class="flex items-center bg-amber-50 px-2 py-1 rounded-md">
+          <span class="js-detail-rating-value text-xs font-bold text-amber-700">0.0</span>
+          <svg-icon src="assets/icons/star.svg" class="w-3.5 h-3.5 text-amber-400 fill-current ml-1"></svg-icon>
+        </div>
+        <div class="js-detail-rating-stars flex"></div>
+        <span class="text-slate-300">|</span>
+        <span class="js-detail-reviews-count text-xs text-slate-500 hover:underline cursor-pointer">
+          0 verified reviews
+        </span>
+      </div>
+
+      <!-- Pricing layout -->
+      <div class="flex items-baseline gap-3 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
+        <div class="flex flex-col">
+          <div class="js-detail-discount-wrapper hidden flex items-center gap-2">
+            <span class="js-detail-original-price text-sm text-slate-400 line-through">$0.00</span>
+            <span class="js-detail-savings text-[10px] font-bold text-rose-500 uppercase">Save $0.00</span>
+          </div>
+          <span class="js-detail-price text-3xl font-black text-slate-900 font-outfit">$0.00</span>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="space-y-1">
+        <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Product Info</h2>
+        <p class="js-detail-description text-slate-600 text-sm leading-relaxed font-light">
+          Product description content.
+        </p>
+      </div>
+
+      <!-- Specifications Specsheet Grid -->
+      <div class="border-t border-slate-100 pt-6">
+        <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-3">Specifications</h2>
+        <div class="grid grid-cols-2 gap-y-3 gap-x-6 text-xs text-slate-500">
+          <div>
+            <span class="block font-medium text-slate-400 uppercase tracking-wide">SKU</span>
+            <span class="js-detail-sku text-slate-800 font-semibold">SKU-VALUE</span>
+          </div>
+          <div>
+            <span class="block font-medium text-slate-400 uppercase tracking-wide">Weight</span>
+            <span class="js-detail-weight text-slate-800 font-semibold">0.0 kg</span>
+          </div>
+          <div>
+            <span class="block font-medium text-slate-400 uppercase tracking-wide">Dimensions</span>
+            <span class="js-detail-dimensions text-slate-800 font-semibold">Width x Height x Depth</span>
+          </div>
+          <div>
+            <span class="block font-medium text-slate-400 uppercase tracking-wide">Warranty</span>
+            <span class="js-detail-warranty text-slate-800 font-semibold">Warranty info</span>
+          </div>
+          <div>
+            <span class="block font-medium text-slate-400 uppercase tracking-wide">Shipping</span>
+            <span class="js-detail-shipping text-slate-800 font-semibold">Shipping info</span>
+          </div>
+          <div>
+            <span class="block font-medium text-slate-400 uppercase tracking-wide">Return Policy</span>
+            <span class="js-detail-return-policy text-slate-800 font-semibold">Return Policy info</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Section: Quantities + Buttons -->
+    <div class="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+      <!-- Quantity input selector -->
+      <div class="flex items-center justify-between border border-slate-200 rounded-xl px-2 py-1.5 bg-slate-50/50">
+        <button id="qty-minus" class="js-detail-qty-minus w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-200 cursor-pointer text-slate-600 transition-colors">
+          <svg-icon src="assets/icons/minus.svg" class="h-4 w-4"></svg-icon>
+        </button>
+        <span id="qty-display" class="js-detail-qty-display w-12 text-center text-sm font-bold text-slate-800 select-none">1</span>
+        <button id="qty-plus" class="js-detail-qty-plus w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-200 cursor-pointer text-slate-600 transition-colors">
+          <svg-icon src="assets/icons/plus.svg" class="h-4 w-4"></svg-icon>
+        </button>
+      </div>
+
+      <!-- Add to cart -->
+      <button 
+        id="add-to-cart-btn"
+        class="js-detail-add-to-cart-btn flex-grow flex items-center justify-center gap-2 px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-indigo-500/20 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed cursor-pointer transition-all duration-200"
+      >
+        <svg-icon src="assets/icons/shopping-cart.svg" class="h-5 w-5"></svg-icon>
+        Add to Cart
+      </button>
+    </div>
+  </div>
+</template>

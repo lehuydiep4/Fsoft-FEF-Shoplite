@@ -2,6 +2,8 @@
 // Home Page catalog and filtering controller.
 import { fetchProducts, fetchCategories } from './api.js';
 import { updateCartBadges } from './components.js';
+import { showToast } from './toast.js';
+import { bindTemplateData } from '../utils/dom.js';
 
 // Elements
 const productsGrid = document.getElementById('products-grid');
@@ -16,6 +18,7 @@ const emptyState = document.getElementById('empty-state');
 let allProducts = [];
 let selectedCategory = 'all';
 let searchQuery = '';
+let cardTemplate = null;
 
 /**
  * Initializes the page.
@@ -24,12 +27,21 @@ async function init() {
   showLoading();
   try {
     // Parallel fetching
-    const [products, categories] = await Promise.all([
+    const [products, categories, cardHtml] = await Promise.all([
       fetchProducts(),
-      fetchCategories()
+      fetchCategories(),
+      fetch('components/product-card.html').then(res => {
+        if (!res.ok) throw new Error("Failed to load product card component");
+        return res.text();
+      })
     ]);
 
     allProducts = products;
+
+    // Parse product card template
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(cardHtml, 'text/html');
+    cardTemplate = doc.getElementById('product-card-template');
 
     // Read search query from URL params if present
     const urlParams = new URLSearchParams(window.location.search);
@@ -103,15 +115,15 @@ function getStarsHtml(rating) {
   let stars = '';
   // Full Stars
   for (let i = 0; i < fullStars; i++) {
-    stars += `<svg class="w-4 h-4 text-amber-400 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>`;
+    stars += `<svg-icon src="assets/icons/star.svg" class="w-4 h-4 text-amber-400 fill-current"></svg-icon>`;
   }
   // Half Star
   if (hasHalfStar) {
-    stars += `<svg class="w-4 h-4 text-amber-400 fill-current" viewBox="0 0 20 20"><defs><linearGradient id="half"><stop offset="50%" stop-color="currentColor"/><stop offset="50%" stop-color="#E2E8F0"/></linearGradient></defs><path fill="url(#half)" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>`;
+    stars += `<svg-icon src="assets/icons/star-half.svg" class="w-4 h-4 text-amber-400 fill-current"></svg-icon>`;
   }
   // Empty Stars
   for (let i = 0; i < emptyStars; i++) {
-    stars += `<svg class="w-4 h-4 text-slate-200 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>`;
+    stars += `<svg-icon src="assets/icons/star.svg" class="w-4 h-4 text-slate-200 fill-current"></svg-icon>`;
   }
   return stars;
 }
@@ -144,8 +156,9 @@ function renderProducts() {
     return;
   }
   emptyState.classList.add('hidden');
+  productsGrid.innerHTML = '';
 
-  productsGrid.innerHTML = filtered.map(product => {
+  filtered.forEach(product => {
     const { id, title, price, discountPercentage, rating, thumbnail, category } = product;
 
     // Calc discounted price
@@ -155,82 +168,37 @@ function renderProducts() {
     // Format category label
     const categoryLabel = category.charAt(0).toUpperCase() + category.slice(1);
 
-    return `
-      <div class="bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full group">
-        <!-- Card Image & Add to Cart Container -->
-        <div class="relative aspect-video w-full bg-slate-50 overflow-hidden border-b border-slate-100/60 group">
-          <!-- Image Link -->
-          <a href="product.html?id=${id}" class="block w-full h-full">
-            <img 
-              src="${thumbnail || 'assets/placeholder.webp'}"
-              alt="${title}"
-              loading="lazy"
-              onerror="this.onerror=null; this.src='assets/placeholder.webp';"
-              class="object-cover h-full w-full group-hover:scale-105 transition-transform duration-500"
-            />
-          </a>
+    // Clone template content
+    if (!cardTemplate) return;
+    const clone = cardTemplate.content.cloneNode(true);
 
-          <!-- Discount badge -->
-          ${hasDiscount ? `
-            <span class="absolute top-3 left-3 z-10 inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-500 text-white shadow-xs">
-              -${discountPercentage.toFixed(0)}% OFF
-            </span>
-          ` : ''}
+    bindTemplateData(clone, {
+      '.js-card-img-link': { href: `product.html?id=${id}` },
+      '.js-card-img': { src: thumbnail || 'assets/placeholder.webp', alt: title },
+      '.js-card-discount-badge': hasDiscount
+        ? { className: 'js-card-discount-badge absolute top-3 left-3 z-10 inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-500 text-white shadow-xs', textContent: `-${discountPercentage.toFixed(0)}% OFF` }
+        : { className: 'js-card-discount-badge hidden' },
+      '.js-card-category': categoryLabel,
+      '.js-card-rating-text': `(${rating.toFixed(1)})`,
+      '.js-card-title-link': { href: `product.html?id=${id}`, textContent: title },
+      '.js-card-original-price': hasDiscount
+        ? { className: 'js-card-original-price text-xs text-slate-400 line-through', textContent: `$${price.toFixed(2)}` }
+        : { className: 'js-card-original-price hidden' },
+      '.js-card-price': `$${finalPrice.toFixed(2)}`,
+      '.js-card-details-btn': { href: `product.html?id=${id}` },
+      '.js-card-add-to-cart-btn': { 'data-id': id }
+    });
 
-          <!-- Hover Add to Cart Button Overlay -->
-          <div class="absolute inset-0 bg-slate-950/45 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px] pointer-events-none">
-            <button 
-              data-id="${id}"
-              class="add-to-cart-btn-home pointer-events-auto px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 rounded-xl transition-all cursor-pointer shadow-lg flex items-center gap-1.5 transform translate-y-2 group-hover:translate-y-0 duration-300"
-            >
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
-              Add to Cart
-            </button>
-          </div>
-        </div>
+    // Image fallback load error handler
+    const img = clone.querySelector('.js-card-img');
+    if (img) img.onerror = () => { img.src = 'assets/placeholder.webp'; };
 
-        <!-- Content -->
-        <div class="p-5 flex-grow flex flex-col justify-between">
-          <div class="space-y-2">
-            <!-- Category & Rating -->
-            <div class="flex items-center justify-between text-xs">
-              <span class="text-indigo-600 font-semibold uppercase tracking-wider">${categoryLabel}</span>
-              <div class="flex items-center gap-1">
-                <span class="text-slate-400">(${rating.toFixed(1)})</span>
-                <div class="flex">${getStarsHtml(rating)}</div>
-              </div>
-            </div>
+    // Stars HTML injection
+    const starsContainer = clone.querySelector('.js-card-stars');
+    if (starsContainer) starsContainer.innerHTML = getStarsHtml(rating);
 
-            <!-- Title -->
-            <h3 class="text-base font-bold text-slate-800 line-clamp-2 group-hover:text-indigo-600 transition-colors">
-              <a href="product.html?id=${id}">${title}</a>
-            </h3>
-          </div>
-
-          <!-- Price & Actions -->
-          <div class="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between gap-4">
-            <div class="flex flex-col">
-              ${hasDiscount ? `
-                <span class="text-xs text-slate-400 line-through">$${price.toFixed(2)}</span>
-                <span class="text-lg font-black text-slate-800 font-outfit">$${finalPrice.toFixed(2)}</span>
-              ` : `
-                <span class="text-lg font-black text-slate-800 font-outfit">$${price.toFixed(2)}</span>
-              `}
-            </div>
-            
-            <a 
-              href="product.html?id=${id}" 
-              class="px-4 py-2 text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-xl transition-all cursor-pointer whitespace-nowrap"
-            >
-              Details
-            </a>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join('');
+    productsGrid.appendChild(clone);
+  });
 }
 
 // Loading handlers
@@ -267,7 +235,7 @@ window.addEventListener('product-search', (e) => {
 // Event delegation for the product grid (Add to Cart clicks)
 if (productsGrid) {
   productsGrid.addEventListener('click', (e) => {
-    const btn = e.target.closest('.add-to-cart-btn-home');
+    const btn = e.target.closest('.js-card-add-to-cart-btn');
     if (!btn) return;
 
     e.preventDefault();
@@ -295,48 +263,8 @@ if (productsGrid) {
 
     localStorage.setItem('cart', JSON.stringify(cart));
     updateCartBadges();
-    showToast(product.title);
+    showToast("Item Added!", `"${product.title}" added to cart.`);
   });
-}
-
-/**
- * Renders a premium dynamic toast notification on the screen.
- */
-function showToast(title) {
-  let container = document.getElementById('toast-container');
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'toast-container';
-    container.className = 'fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none';
-    document.body.appendChild(container);
-  }
-
-  const toast = document.createElement('div');
-  toast.className = 'flex items-center gap-3 p-4 bg-emerald-50 text-emerald-800 border border-emerald-100 rounded-xl shadow-lg transition-all duration-300 transform translate-y-10 opacity-0 max-w-sm pointer-events-auto';
-  toast.innerHTML = `
-    <svg class="h-5 w-5 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-    <div class="text-xs">
-      <p class="font-bold">Item Added!</p>
-      <p class="text-emerald-600 mt-0.5">"${title}" added to cart.</p>
-    </div>
-  `;
-
-  container.appendChild(toast);
-
-  // Trigger animation next tick
-  setTimeout(() => {
-    toast.classList.remove('translate-y-10', 'opacity-0');
-  }, 10);
-
-  // Auto remove
-  setTimeout(() => {
-    toast.classList.add('translate-y-10', 'opacity-0');
-    setTimeout(() => {
-      toast.remove();
-    }, 300);
-  }, 3000);
 }
 
 // Run on page load

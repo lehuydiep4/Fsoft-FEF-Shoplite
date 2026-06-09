@@ -1,0 +1,54 @@
+<template id="cart-item-template">
+  <div class="bg-white border border-slate-100 rounded-2xl p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6 shadow-xs hover:shadow-md transition-shadow">
+    <!-- Image -->
+    <a href="#" class="js-cart-item-link w-24 h-24 bg-slate-50 border border-slate-100 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center">
+      <img 
+        src="assets/placeholder.webp" 
+        alt="Product Image"
+        class="js-cart-item-img w-full h-full object-cover"
+      />
+    </a>
+
+    <!-- Details -->
+    <div class="flex-grow text-center sm:text-left space-y-1 w-full min-w-0">
+      <h3 class="font-bold text-slate-800 hover:text-indigo-600 transition-colors text-base truncate">
+        <a href="#" class="js-cart-item-title-link">Product Title</a>
+      </h3>
+      <div class="flex items-center justify-center sm:justify-start gap-2">
+        <span class="js-cart-item-price text-sm font-black text-slate-800">$0.00</span>
+        <span class="js-cart-item-original-price hidden text-xs text-slate-400 line-through">$0.00</span>
+      </div>
+    </div>
+
+    <!-- Controls (Quantity + Delete) -->
+    <div class="flex flex-row items-center justify-between sm:justify-end gap-6 w-full sm:w-auto flex-shrink-0 pt-4 sm:pt-0 border-t sm:border-0 border-slate-50">
+      <!-- Quantity adjuster -->
+      <div class="flex items-center border border-slate-200 rounded-xl px-1 py-1 bg-slate-50/50">
+        <button 
+          class="js-cart-item-qty-minus w-7 h-7 rounded-lg flex items-center justify-center hover:bg-slate-200 cursor-pointer text-slate-500 transition-colors"
+        >
+          <svg-icon src="assets/icons/minus.svg" class="h-3.5 w-3.5"></svg-icon>
+        </button>
+        <span class="js-cart-item-qty-display w-9 text-center text-xs font-bold text-slate-800 select-none">1</span>
+        <button 
+          class="js-cart-item-qty-plus w-7 h-7 rounded-lg flex items-center justify-center hover:bg-slate-200 cursor-pointer text-slate-500 transition-colors"
+        >
+          <svg-icon src="assets/icons/plus.svg" class="h-3.5 w-3.5"></svg-icon>
+        </button>
+      </div>
+
+      <!-- Total price & Delete -->
+      <div class="flex items-center gap-4">
+        <span class="js-cart-item-subtotal text-base font-extrabold text-slate-800 font-outfit min-w-[70px] text-right">
+          $0.00
+        </span>
+        <button 
+          class="js-cart-item-delete-btn p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer transition-all"
+          aria-label="Remove item"
+        >
+          <svg-icon src="assets/icons/trash.svg" class="h-5 w-5"></svg-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
