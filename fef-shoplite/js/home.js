@@ -1,14 +1,15 @@
 // js/home.js
 // Home Page catalog and filtering controller.
-import { fetchProducts, fetchCategories } from './api.js';
+import { fetchProducts } from './api.js';
 import { updateCartBadges } from './components.js';
 import { showToast } from './toast.js';
 import { bindTemplateData } from '../utils/dom.js';
 import { addToCart, getProductPriceInfo } from './services/cartService.js';
+import { renderPagination } from './pagination.js';
+import './sidebar.js';
 
 // Elements
 const productsGrid = document.getElementById('products-grid');
-const categoryContainer = document.getElementById('category-filter-container');
 const loadingSkeleton = document.getElementById('loading-skeleton');
 const errorAlert = document.getElementById('error-alert');
 const errorMessage = document.getElementById('error-message');
@@ -19,6 +20,9 @@ const emptyState = document.getElementById('empty-state');
 let allProducts = [];
 let selectedCategory = 'all';
 let searchQuery = '';
+let sortOption = 'default';
+let currentPage = 1;
+const ITEMS_PER_PAGE = 9;
 let cardTemplate = null;
 
 /**
@@ -27,10 +31,9 @@ let cardTemplate = null;
 async function init() {
   showLoading();
   try {
-    // Parallel fetching
-    const [products, categories, cardHtml] = await Promise.all([
+    // Parallel fetching of products and product card HTML
+    const [products, cardHtml] = await Promise.all([
       fetchProducts(),
-      fetchCategories(),
       fetch('components/product-card.html').then(res => {
         if (!res.ok) throw new Error("Failed to load product card component");
         return res.text();
@@ -44,66 +47,41 @@ async function init() {
     const doc = parser.parseFromString(cardHtml, 'text/html');
     cardTemplate = doc.getElementById('product-card-template');
 
-    // Read search query from URL params if present
+    // Read initial filters from URL params (e.g. for deep linking or redirects)
     const urlParams = new URLSearchParams(window.location.search);
     const searchParam = urlParams.get('search');
     if (searchParam) {
       searchQuery = searchParam;
     }
-    
-    renderCategories(categories);
+    const categoryParam = urlParams.get('category');
+    if (categoryParam) {
+      selectedCategory = categoryParam.toLowerCase();
+    }
+
+    // Wait for the app-sidebar Web Component to register and render
+    await customElements.whenDefined('app-sidebar');
+    const sidebar = document.querySelector('app-sidebar');
+    if (sidebar) {
+      // Initialize state from sidebar component (which reads from URL parameters itself)
+      selectedCategory = sidebar.selectedCategory;
+      sortOption = sidebar.sortOption;
+
+      // Listen to filter/sort changes from sidebar component
+      sidebar.addEventListener('filter-change', (e) => {
+        selectedCategory = e.detail.category;
+        sortOption = e.detail.sort;
+        currentPage = 1;
+        renderProducts();
+      });
+    }
+
     renderProducts();
+
   } catch (error) {
     showError(error.message || 'Check your internet connection and try again.');
   }
 }
 
-/**
- * Renders the category filter pill buttons dynamically.
- */
-function renderCategories(categories) {
-  if (!categoryContainer) return;
-
-  // Build the list of categories adding "All"
-  const items = ['all', ...categories];
-
-  categoryContainer.innerHTML = items.map(cat => {
-    const isSelected = selectedCategory === cat;
-    const activeClasses = "bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-500/20";
-    const inactiveClasses = "bg-white text-slate-600 hover:text-indigo-600 border border-slate-200 hover:border-indigo-100 hover:bg-indigo-50/20";
-    
-    // Capitalize label
-    const label = cat.charAt(0).toUpperCase() + cat.slice(1);
-
-    return `
-      <button 
-        data-category="${cat}"
-        class="px-4 py-1.5 rounded-full text-xs transition-all duration-200 cursor-pointer whitespace-nowrap ${isSelected ? activeClasses : inactiveClasses}"
-      >
-        ${label}
-      </button>
-    `;
-  }).join('');
-
-  // Add click listeners to filter pills
-  categoryContainer.querySelectorAll('button').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      selectedCategory = e.currentTarget.getAttribute('data-category');
-      
-      // Update pills appearance
-      categoryContainer.querySelectorAll('button').forEach(b => {
-        b.className = b.className.replace(/bg-indigo-600|text-white|font-semibold|shadow-sm|shadow-indigo-500\/20/g, '').trim();
-        b.className += " bg-white text-slate-600 hover:text-indigo-600 border border-slate-200 hover:border-indigo-100 hover:bg-indigo-50/20";
-        if (b.getAttribute('data-category') === selectedCategory) {
-          b.className = b.className.replace(/bg-white|text-slate-600|hover:text-indigo-600|border|border-slate-200|hover:border-indigo-100|hover:bg-indigo-50\/20/g, '').trim();
-          b.className += " bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-500/20";
-        }
-      });
-
-      renderProducts();
-    });
-  });
-}
 
 /**
  * Helper function to generate dynamic star rating HTML.
@@ -130,17 +108,17 @@ function getStarsHtml(rating) {
 }
 
 /**
- * Renders the products based on category filters.
+ * Renders the products based on category filters, search, sorting, and pagination.
  */
 function renderProducts() {
   if (!productsGrid) return;
 
-  // Filter products by category
+  // 1. Filter products by category
   let filtered = selectedCategory === 'all' 
     ? allProducts 
     : allProducts.filter(p => p.category === selectedCategory);
 
-  // Filter products by search query
+  // 2. Filter products by search query
   if (searchQuery) {
     const q = searchQuery.toLowerCase().trim();
     filtered = filtered.filter(p => 
@@ -149,17 +127,48 @@ function renderProducts() {
     );
   }
 
+  // 3. Sort products
+  if (sortOption === 'price-asc') {
+    filtered.sort((a, b) => {
+      const priceA = getProductPriceInfo(a).finalPrice;
+      const priceB = getProductPriceInfo(b).finalPrice;
+      return priceA - priceB;
+    });
+  } else if (sortOption === 'price-desc') {
+    filtered.sort((a, b) => {
+      const priceA = getProductPriceInfo(a).finalPrice;
+      const priceB = getProductPriceInfo(b).finalPrice;
+      return priceB - priceA;
+    });
+  } else if (sortOption === 'name-asc') {
+    filtered.sort((a, b) => a.title.localeCompare(b.title));
+  } else if (sortOption === 'name-desc') {
+    filtered.sort((a, b) => b.title.localeCompare(a.title));
+  }
+
   hideLoading();
 
   if (filtered.length === 0) {
     emptyState.classList.remove('hidden');
     productsGrid.innerHTML = '';
+    renderPagination(0);
     return;
   }
   emptyState.classList.add('hidden');
   productsGrid.innerHTML = '';
 
-  filtered.forEach(product => {
+  // 4. Paginate products
+  const totalFilteredCount = filtered.length;
+  const totalPages = Math.ceil(totalFilteredCount / ITEMS_PER_PAGE);
+  if (currentPage > totalPages) {
+    currentPage = Math.max(1, totalPages);
+  }
+  
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedItems = filtered.slice(startIndex, endIndex);
+
+  paginatedItems.forEach(product => {
     const { id, title, price, discountPercentage, rating, thumbnail, category } = product;
 
     // Calc discounted price
@@ -199,6 +208,24 @@ function renderProducts() {
 
     productsGrid.appendChild(clone);
   });
+
+  // Render pagination buttons using decoupled component
+  renderPagination({
+    containerId: 'pagination-container',
+    totalItems: totalFilteredCount,
+    itemsPerPage: ITEMS_PER_PAGE,
+    currentPage: currentPage,
+    onPageChange: (newPage) => {
+      currentPage = newPage;
+      renderProducts();
+      
+      // Scroll smoothly to catalog start
+      const catalogEl = document.getElementById('products-list');
+      if (catalogEl) {
+        catalogEl.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  });
 }
 
 // Loading handlers
@@ -209,6 +236,7 @@ function showLoading() {
   emptyState.classList.add('hidden');
 }
 
+// Hide skeleton and reveal products grid
 function hideLoading() {
   loadingSkeleton.classList.add('hidden');
   productsGrid.classList.remove('hidden');
@@ -229,6 +257,14 @@ if (retryBtn) {
 // Listen to custom search event from header search bar
 window.addEventListener('product-search', (e) => {
   searchQuery = e.detail.query;
+  currentPage = 1;
+  renderProducts();
+});
+
+// Listen to custom category-select event from header search bar dropdown suggestions
+window.addEventListener('category-select', (e) => {
+  selectedCategory = e.detail.category;
+  currentPage = 1;
   renderProducts();
 });
 

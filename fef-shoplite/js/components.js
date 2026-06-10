@@ -100,7 +100,7 @@ function initNavbarLogic() {
     btn.addEventListener('click', () => {
       const isExpanded = btn.getAttribute('aria-expanded') === 'true';
       btn.setAttribute('aria-expanded', !isExpanded);
-      menu.classList.toggle('hidden');
+      menu.classList.toggle('open');
       if (iconClosed) iconClosed.classList.toggle('hidden');
       if (iconOpen) iconOpen.classList.toggle('hidden');
     });
@@ -150,6 +150,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 2. Once the navbar is successfully injected, fetch and nest searchbar.html
   if (loadedNavbar) {
+    const navbarPlaceholder = document.getElementById('navbar-placeholder');
+    if (navbarPlaceholder) {
+      navbarPlaceholder.classList.add('sticky', 'top-0', 'z-50', 'w-full');
+    }
     await loadSearchbar();
     
     // 3. Execute navbar styling and toggle logic
@@ -206,4 +210,11 @@ class SvgIcon extends HTMLElement {
 if (!customElements.get('svg-icon')) {
   customElements.define('svg-icon', SvgIcon);
 }
+
+// Synchronize cart count badges reactively across tabs/pages
+window.addEventListener('storage', (e) => {
+  if (e.key === 'cart') {
+    updateCartBadges();
+  }
+});
 
