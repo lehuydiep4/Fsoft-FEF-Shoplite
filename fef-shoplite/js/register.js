@@ -186,6 +186,7 @@ if (form) {
                         isTermsValid;
 
     if (isFormValid) {
+      alert("Not yet implemented.");
       // Hide form and show success visual
       form.classList.add('hidden');
       if (successAlert) {

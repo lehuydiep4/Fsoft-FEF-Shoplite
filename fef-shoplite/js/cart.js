@@ -142,7 +142,7 @@ function hideLoading() {
 // Checkout Button handler
 if (checkoutBtn) {
   checkoutBtn.addEventListener('click', () => {
-    alert("Checkout functionality would be implemented in Day 5/6! Cart details successfully parsed.");
+    alert("Not yet implemented.");
   });
 }
 
